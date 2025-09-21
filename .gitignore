@@ -1,4 +1,1 @@
-__pycache__/
-*.pyc
-config.py  # Already there for your hardcoded secrets
-.env
+config.py
