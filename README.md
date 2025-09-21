@@ -1,127 +1,165 @@
-Flask PR Analyzer
- 
-A Flask-based webhook server that automates code reviews for GitHub pull requests (PRs) using the Grok API. It analyzes PR diffs, generates detailed feedback (code quality, bugs, optimizations), and posts comments to PRs. Deployed on Render’s free tier, it listens for webhooks at /webhook and uses environment variables for secure configuration.
-Table of Contents
+```markdown
+# PullAnalyser
 
-Features
-Architecture
-Prerequisites
-Local Setup
-Deploying to Render
-Configuring GitHub Webhook
-Troubleshooting
-404 Not Found Error
-Comments Not Posting
+A Flask-based webhook server that automates code reviews for GitHub pull requests (PRs) using the **Grok API**.  
+It analyzes PR diffs, generates detailed feedback (code quality, bugs, optimizations), and posts comments directly on PRs.  
+Deployed on **Render’s free tier**, it listens for webhooks at `/webhook` and uses environment variables for secure configuration.
 
+---
 
-Security Notes
-Contributing
-License
+## 📑 Table of Contents
+- [Features](#features)
+- [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+- [Local Setup](#local-setup)
+- [Deploying to Render](#deploying-to-render)
+- [Configuring GitHub Webhook](#configuring-github-webhook)
+- [Troubleshooting](#troubleshooting)
+  - [404 Not Found Error](#404-not-found-error)
+  - [Comments Not Posting](#comments-not-posting)
+- [Security Notes](#security-notes)
+- [Contributing](#contributing)
+- [License](#license)
 
-Features
+---
 
-Automated Code Reviews: Analyzes PR diffs using Grok API (llama-3.1-8b-instant) for structure, bugs, performance, and security.
-GitHub Integration: Posts inline and main comments to PRs using a GitHub Personal Access Token (PAT).
-Multi-Platform Support: Handles GitHub, GitLab, and Bitbucket webhooks (GitHub-focused).
-Secure Configuration: Uses environment variables for secrets (GROQ_API_KEY, WEBHOOK_SECRET, GITHUB_TOKEN).
-Dockerized Deployment: Runs on Render with a Dockerfile for consistent builds.
+## 🚀 Features
+- **Automated Code Reviews**: Analyzes PR diffs using Grok API (`llama-3.1-8b-instant`) for structure, bugs, performance, and security.  
+- **GitHub Integration**: Posts inline and main comments to PRs using a GitHub Personal Access Token (PAT).  
+- **Multi-Platform Support**: Handles GitHub, GitLab, and Bitbucket webhooks (GitHub-focused).  
+- **Secure Configuration**: Uses environment variables for secrets (`GROQ_API_KEY`, `WEBHOOK_SECRET`, `GITHUB_TOKEN`).  
+- **Dockerized Deployment**: Runs on Render with a Dockerfile for consistent builds.  
 
-Architecture
+---
+
+## 🏗 Architecture
+```
+
 PullAnalyser/
 ├── app.py              # Flask app with /webhook endpoint
-├── core_brain.py       # Grok API for code analysis
-├── git_adapters.py     # GitHub/GitLab/Bitbucket webhook handlers
+├── core\_brain.py       # Grok API for code analysis
+├── git\_adapters.py     # GitHub/GitLab/Bitbucket webhook handlers
 ├── config.py           # Environment variable loader
 ├── requirements.txt    # Python dependencies
 ├── Dockerfile          # Docker setup for Render
-├── .gitignore          # Ignores __pycache__, .env
+├── .gitignore          # Ignores **pycache**, .env
 
-Prerequisites
+````
 
-Python: 3.12+
-Docker: For Render deployment
-GitHub Account: With PAT (scopes: repo)
-Grok API Key: From xAI
-ngrok: For local webhook testing
-Render Account: Free tier, no credit card needed
+---
 
-Local Setup
+## 📋 Prerequisites
+- **Python**: 3.12+  
+- **Docker**: For Render deployment  
+- **GitHub Account**: With PAT (scopes: `repo`)  
+- **Grok API Key**: From xAI  
+- **ngrok**: For local webhook testing  
+- **Render Account**: Free tier (no credit card required)  
 
-Clone the Repository:
+---
+
+## ⚡ Local Setup
+
+### 1. Clone the Repository
+```bash
 git clone https://github.com/majorwinger1316/PullAnalyser.git
 cd PullAnalyser
+````
 
+### 2. Install Dependencies
 
-Install Dependencies:
+```bash
 pip install -r requirements.txt
+```
 
-requirements.txt:
+**requirements.txt**
+
+```
 Flask==3.0.3
 requests==2.32.3
 gunicorn==22.0.0
+```
 
+### 3. Set Environment Variables
 
-Set Environment Variables:
+```bash
 export GROQ_API_KEY="your_grok_api_key"
 export WEBHOOK_SECRET="my_github_webhook_secret_123456!@#"
 export GITHUB_TOKEN="your_github_token"  # Must have `repo` scope
+```
 
+Persist variables in `~/.zshrc` and reload:
 
-Persist: Add to ~/.zshrc and run source ~/.zshrc.
-Verify: env | grep -E "GROQ_API_KEY|WEBHOOK_SECRET|GITHUB_TOKEN".
+```bash
+source ~/.zshrc
+```
 
+Verify:
 
-Run Locally:
+```bash
+env | grep -E "GROQ_API_KEY|WEBHOOK_SECRET|GITHUB_TOKEN"
+```
+
+### 4. Run Locally
+
+```bash
 python app.py
+```
 
+Runs on: `http://0.0.0.0:5000`
 
-Runs on http://0.0.0.0:5000.
+### 5. Test with ngrok
 
+```bash
+ngrok http 5000
+```
 
-Test with ngrok:
+* Copy HTTPS URL (e.g., `https://abc123.ngrok-free.app`)
+* Inspect traffic: [http://localhost:4040](http://localhost:4040)
 
-Install: brew install ngrok (macOS) or download from ngrok.com.
-Start: ngrok http 5000.
-Copy HTTPS URL (e.g., https://abc123.ngrok-free.app).
-Inspect: http://localhost:4040.
+---
 
+## 🚀 Deploying to Render
 
+### 1. Push to GitHub
 
-Deploying to Render
+Add `.gitignore`:
 
-Push to GitHub:
-
-Ensure .gitignore:__pycache__/
+```
+__pycache__/
 *.pyc
 .env
+```
 
+Push:
 
-Push: git push origin main.
+```bash
+git push origin main
+```
 
+### 2. Create Web Service
 
-Create Web Service:
+* Sign in: [Render](https://render.com)
+* **New → Web Service → Connect repo**
+* Settings:
 
-Sign in: render.com (GitHub login).
-Dashboard > New > Web Service > Connect majorwinger1316/PullAnalyser.
-Settings:
-Name: pullanalyser-1
-Runtime: Docker
-Build: docker build -t app .
-Start: docker run -p 8080:8080 app
-Instance: Free
-Environment Variables:
-GROQ_API_KEY: Your Grok key
-WEBHOOK_SECRET: my_github_webhook_secret_123456!@#
-GITHUB_TOKEN: PAT with repo scope
+  * Name: `pullanalyser-1`
+  * Runtime: **Docker**
+  * Build: `docker build -t app .`
+  * Start: `docker run -p 8080:8080 app`
+  * Instance: Free
+  * Environment Variables:
 
+    * `GROQ_API_KEY` → Your Grok key
+    * `WEBHOOK_SECRET` → `my_github_webhook_secret_123456!@#`
+    * `GITHUB_TOKEN` → PAT with `repo` scope
 
+Deploy (\~5-10 minutes).
+App URL → `https://pullanalyser-1.onrender.com`
 
+**Dockerfile**
 
-Deploy (~5-10 minutes).
-URL: https://pullanalyser-1.onrender.com.
-
-
-Dockerfile:
+```dockerfile
 FROM python:3.12-slim
 WORKDIR /app
 COPY requirements.txt .
@@ -129,107 +167,98 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 EXPOSE 8080
 CMD ["gunicorn", "--bind", "0.0.0.0:8080", "app:app"]
+```
 
+---
 
+## 🔗 Configuring GitHub Webhook
 
-Configuring GitHub Webhook
+1. Go to **Repo Settings → Webhooks → Add webhook**
 
-Add Webhook:
+   * **Payload URL**: `https://pullanalyser-1.onrender.com/webhook` (or ngrok URL)
+   * **Content type**: `application/json`
+   * **Secret**: `my_github_webhook_secret_123456!@#`
+   * **Events**: `Pull requests` → (select *opened*)
 
-Go to majorwinger1316/F1Statistics (target repo) > Settings > Webhooks > Add webhook.
-Payload URL: https://pullanalyser-1.onrender.com/webhook (or ngrok URL for local).
-Content type: application/json.
-Secret: my_github_webhook_secret_123456!@# (matches WEBHOOK_SECRET).
-Events: Pull requests (select opened).
-Save.
+2. Save & Test:
 
+   * Open a PR in your repo (`F1Statistics`)
+   * Check Render/ngrok logs
+   * Verify PR comments
 
-Test:
+---
 
-Create a PR in F1Statistics.
-Check Render logs (Dashboard > Logs) or ngrok (http://localhost:4040).
-Verify PR comments in GitHub.
+## 🛠 Troubleshooting
 
+### ❌ 404 Not Found Error
 
+* Issue: Root URL (`/`) returns 404
+* Fix: Add a health route in `app.py`:
 
-Troubleshooting
-404 Not Found Error
-
-Issue: Accessing https://pullanalyser-1.onrender.com returns 404 Not Found because no / route exists.
-Fix:
-Add to app.py:@app.route('/')
+```python
+@app.route('/')
 def home():
     return 'PR Analyzer is running!', 200
+```
 
+Commit & redeploy:
 
-Commit: git add app.py && git commit -m "Add root route" && git push origin main.
-Redeploy: Render Dashboard > Manual Deploy.
-Test: curl https://pullanalyser-1.onrender.com (should return PR Analyzer is running!).
+```bash
+git add app.py
+git commit -m "Add root route"
+git push origin main
+```
 
+---
 
-Note: Use /webhook for actual functionality.
+### 📝 Comments Not Posting
 
-Comments Not Posting
+* **Symptom**: Logs show `200 OK` but no PR comments
+* **Causes & Fixes**:
 
-Issue: Logs show 200 OK for /webhook, but no PR comments (e.g., Post comment status: 401, "Bad credentials").
+  * **Invalid GITHUB\_TOKEN** → Regenerate with `repo` scope
+  * **Repo Access** → Ensure token has access
+  * **Non-opened PR** → Add support for `"synchronize"` events in `git_adapters.py`
+  * **Grok API Failure** → Test with:
 
-Causes and Fixes:
+    ```bash
+    curl -H "Authorization: Bearer $GROQ_API_KEY" https://api.groq.com/openai/v1/models
+    ```
 
-Invalid GITHUB_TOKEN:
-Regenerate: GitHub > Settings > Developer settings > Tokens (classic) > Generate new token > Scopes: repo.
-Update:
-Local: export GITHUB_TOKEN="new_token".
-Render: Dashboard > pullanalyser-1 > Environment > Update GITHUB_TOKEN.
+---
 
+## 🔒 Security Notes
 
-Test: curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user (should return majorwinger1316).
+* **Revoke Exposed Secrets**:
 
+  * GitHub → Developer settings → Tokens → Delete
+  * Grok → Contact xAI support
+* **Environment Variables**: Never hardcode secrets
+* **Token Scopes**: `GITHUB_TOKEN` must include `repo` for private repos
 
-Repo Access: Ensure token has access to F1Statistics (public or repo scope for private).
-Test: curl -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" -d '{"body":"Test comment"}' https://api.github.com/repos/majorwinger1316/F1Statistics/issues/3/comments (should return 201).
+---
 
+## 🤝 Contributing
 
-Non-opened PR: Code skips if action isn’t opened.
-Fix: Support synchronize in git_adapters.py:if payload.get('action') not in ['opened', 'synchronize']:
-    print(f"🔍 [DEBUG] Skipping: Action is '{payload.get('action')}'")
-    return "Only processing opened or synchronized PRs"
+1. Fork the repo
+2. Create a feature branch
+3. Commit changes
+4. Open a PR
 
+Testing PRs automatically triggers the analyzer.
 
+---
 
+## 📜 License
 
-Grok API Failure: If logs show LLM output: ❌ Error:
-Test: curl -H "Authorization: Bearer $GROQ_API_KEY" https://api.groq.com/openai/v1/models.
-Update GROQ_API_KEY if 401.
+This project is licensed under the **MIT License**.
+See [LICENSE](LICENSE) for details.
 
+---
 
+🔧 Powered by **CodeMate** & **Grok**
 
+```
 
-Debug Locally:
-python app.py
-ngrok http 5000
-curl -X POST https://your-ngrok-url.ngrok-free.app/webhook \
-     -H "Content-Type: application/json" \
-     -H "X-Hub-Signature-256: sha256=$(python -c "import hmac,hashlib; print(hmac.new(b'my_github_webhook_secret_123456!@#', b'{\"action\":\"opened\",\"pull_request\":{\"number\":3,\"diff_url\":\"https://api.github.com/repos/majorwinger1316/F1Statistics/pulls/3.diff\",\"comments_url\":\"https://api.github.com/repos/majorwinger1316/F1Statistics/issues/3/comments\",\"url\":\"https://api.github.com/repos/majorwinger1316/F1Statistics/pulls/3\"}}', hashlib.sha256).hexdigest())")" \
-     -H "X-GitHub-Event: pull_request" \
-     -d '{"action":"opened","pull_request":{"number":3,"diff_url":"https://api.github.com/repos/majorwinger1316/F1Statistics/pulls/3.diff","comments_url":"https://api.github.com/repos/majorwinger1316/F1Statistics/issues/3/comments","url":"https://api.github.com/repos/majorwinger1316/F1Statistics/pulls/3"}}'
-
-
-
-Security Notes
-
-Revoke Exposed Secrets: If GITHUB_TOKEN or GROQ_API_KEY was hardcoded, revoke:
-GitHub: Settings > Developer settings > Tokens > Delete.
-Grok: Contact xAI support.
-
-
-Environment Variables: config.py uses os.environ.get for safety.
-Token Scopes: GITHUB_TOKEN must have repo for private repos like F1Statistics.
-
-Contributing
-
-Fork, modify, and submit PRs to majorwinger1316/PullAnalyser.
-Test PRs to trigger the analyzer.
-
-License
-MIT License. See LICENSE (create if missing).
-Powered by CodeMate & Grok
+Would you like me to also **add badges** (e.g., Python, Flask, Docker, Render deploy, MIT License) at the top to make it look more professional?
+```
